@@ -24,6 +24,7 @@ const double FUZZINESS_TH = 0.0000001;
 const double EIGENVALUE_TH = 0.0000001;
 const double COVARIANCE_TH = 0.0000001;
 
+
 #include <boost/geometry.hpp>
 namespace bg = boost::geometry;
 
@@ -83,6 +84,7 @@ double* getCovarianceMatrix(vector<double_point> points) {
 std::pair<double, double> getEigenValues(vector<double_point> points, double *covMatrix) {
 	// Calculate eigenvalues, ie. solve (a-x)*(d-x)-b*c = 0 = ad - ax - dx + x^2 - bc
 	// = x^2 - (a+d)x - bc + ad
+	// TODO: ambiguous a,b,c
 	double a = 1;
 	double b = -(covMatrix[0]+covMatrix[3]);
 	double c = -covMatrix[1]*covMatrix[2] + covMatrix[0]*covMatrix[3];
@@ -205,9 +207,7 @@ bool isSymmetryAxis(double_point axisDirection, vector<double_point> centeredPoi
 };
 
 
-vector<double_point> getSymmetryAxes(vector<double_point> points) {
-
-	// Center given points.
+vector<double_point> centerPoints(vector<double_point> points) {
 	std::vector<double_point> centeredPoints;
 	double_point center = getCenterPoint(points);
 	for (int i = 0; i != points.size(); i++) {
@@ -216,6 +216,14 @@ vector<double_point> getSymmetryAxes(vector<double_point> points) {
 		double_point cp(x,y);
 		centeredPoints.push_back(cp);
 	}
+	return centeredPoints;
+};
+
+
+vector<double_point> getSymmetryAxes(vector<double_point> points) {
+
+	// Center given points.
+	std::vector<double_point> centeredPoints = centerPoints(points);
 
 	// Get eigenvalues ang eigenvectors.
 	double *covMatrix = getCovarianceMatrix(centeredPoints);
@@ -235,17 +243,18 @@ vector<double_point> getSymmetryAxes(vector<double_point> points) {
 		// TODO: fall back to nlogn check here
 	} else {
 		if (isSymmetryAxis(eigenVectors.first, centeredPoints)) {
-			cout << "ok1" << endl;
 			returnVector.push_back(eigenVectors.first);
 		}
 		if (isSymmetryAxis(eigenVectors.second, centeredPoints)) {
-			cout << "ok2" << endl;
 			returnVector.push_back(eigenVectors.second);
 		}
 	}
 	
 	return returnVector;
 }
+
+
+
 
 
 
