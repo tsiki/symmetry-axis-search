@@ -16,6 +16,9 @@ Searches the symmetry axises of a set of 2d points.
 #include <unordered_set>
 
 #include <boost/functional/hash.hpp>
+#include <boost/geometry.hpp>
+
+
 using namespace std;
 
 // Thresholds
@@ -24,8 +27,6 @@ const double FUZZINESS_TH = 0.0000001;
 const double EIGENVALUE_TH = 0.0000001;
 const double COVARIANCE_TH = 0.0000001;
 
-
-#include <boost/geometry.hpp>
 namespace bg = boost::geometry;
 
 typedef bg::model::point
@@ -76,7 +77,6 @@ double* getCovarianceMatrix(vector<double_point> points) {
 		matrix[3] += pow(points.at(i).get<1>(), 2); 
 	}
 	matrix[2] = matrix[1];
-	cout << matrix[0] << matrix[3];
 	return matrix;
 };
 
@@ -104,8 +104,6 @@ std::pair<double_point, double_point> getEigenVectors(double *covMatrix, std::pa
 
 	double eig1 = eigenValues.first;
 	double eig2 = eigenValues.second;
-
-	//cout << "cov matrix: " << covMatrix[0] << " " << covMatrix[1] << " " << covMatrix[2] << " " << covMatrix[3] << "\n"; 
 
 	double tempMatrix1[2][2];
 	tempMatrix1[0][0] = covMatrix[0] - eig1;
@@ -153,8 +151,6 @@ bool isSymmetryAxis(double_point axisDirection, vector<double_point> centeredPoi
 	double eigx = axisDirection.get<0>();
 	double eigy = axisDirection.get<1>();
 
-	cout << "tryin with " << eigx << " " << eigy << endl;
-
 	// Create vector orthogonal to axisDirection // TODO: make sure both dimensions are positive
 	double x = cos(M_PI/2)*eigx - sin(M_PI/2)*eigy;
 	double y = sin(M_PI/2)*eigx + cos(M_PI/2)*eigy;
@@ -165,8 +161,6 @@ bool isSymmetryAxis(double_point axisDirection, vector<double_point> centeredPoi
 		double dotProduct1 = (*point).get<0>() * x + (*point).get<1>() * y;
 		double dotProduct2 = (*point).get<0>() * eigx + (*point).get<1>() * eigy;
 		if (dotProduct1 < -1*DISTANCE_FROM_AXIS_TH) {
-
-			cout << "adding " << dotProduct1 << " and " << dotProduct2 << endl;
 
 			// Due to floating point inaccuracies, insert both the ceiling and floor
 			double floorVal1 = floor(-1*dotProduct1/FUZZINESS_TH)*FUZZINESS_TH;
@@ -182,9 +176,6 @@ bool isSymmetryAxis(double_point axisDirection, vector<double_point> centeredPoi
 		}
 	}
 
-	cout << "positives: " << positiveDotProductPoints.size() << endl;
-	cout << "set size: " << set.size() << endl;
-	
 	for (auto pair = positiveDotProductPoints.begin(); pair != positiveDotProductPoints.end(); ++pair) {
 		double dotProduct1 = (*pair).first;
 		double dotProduct2 = (*pair).second;
@@ -194,11 +185,8 @@ bool isSymmetryAxis(double_point axisDirection, vector<double_point> centeredPoi
 		double ceilVal2 = ceil(dotProduct2/FUZZINESS_TH)*FUZZINESS_TH;
 		double floorVal2 = floor(dotProduct2/FUZZINESS_TH)*FUZZINESS_TH;
 
-		cout << "testing " << dotProduct1 << " and " << dotProduct2 << endl;
-
 		if (!set.count(std::make_pair(floorVal1, floorVal2)) && !set.count(std::make_pair(floorVal1, ceilVal2)) &&
 				!set.count(std::make_pair(ceilVal1, floorVal2)) && !set.count(std::make_pair(ceilVal1, ceilVal2))) {
-			cout << "not there!" << endl;
 			return false;
 		}
 	}
@@ -230,16 +218,13 @@ vector<double_point> getSymmetryAxes(vector<double_point> points) {
 	std::pair<double, double> eigenValues = getEigenValues(centeredPoints, covMatrix);
 	std::pair<double_point, double_point> eigenVectors = getEigenVectors(covMatrix, eigenValues);
 
-	cout << "eigen1: " << eigenVectors.first.get<0>() << " " << eigenVectors.first.get<1>() << "\n";
-	cout << "eigen2: " << eigenVectors.second.get<0>() << " " << eigenVectors.second.get<1>() << "\n";
-
 	// TODO: zero length checks etc. be here
 	// TODO: if eigenvalues are the ~same, default to nlogn search
 	// TODO: both eigenvectors need to be normalized to length of 1
 
 	vector<double_point> returnVector;
 	if (abs(eigenValues.first - eigenValues.second) < EIGENVALUE_TH) {
-		std::cout << "Falling back to nlogn search... someday" << endl;
+		std::cout << "Falling back to nlogn search... in a second" << endl;
 		// TODO: fall back to nlogn check here
 	} else {
 		if (isSymmetryAxis(eigenVectors.first, centeredPoints)) {
@@ -290,6 +275,7 @@ int main() {
 	vector<double_point> axes = getSymmetryAxes(asd);
 
 	cout << "\nthe number of axes is " << axes.size();
+
 
 
 	return 0;
