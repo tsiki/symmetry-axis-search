@@ -69,7 +69,7 @@ double_point getCenterPoint(vector<double_point> pointVector) {
 
 
 double* getCovarianceMatrix(vector<double_point> points) {
-	double *matrix = new double [4] (); // TODO: delete // TODO: 2d vector? 2d array?
+	double *matrix = new double [4] (); // 2d vector? 2d array?
 
 	for (int i = 0; i != points.size(); i++) {
 		matrix[0] += pow(points.at(i).get<0>(), 2);
@@ -234,6 +234,8 @@ vector<double_point> getSymmetryAxes(vector<double_point> points) {
 			returnVector.push_back(eigenVectors.second);
 		}
 	}
+
+	delete [] covMatrix;
 	
 	return returnVector;
 }
