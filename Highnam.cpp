@@ -43,7 +43,6 @@ namespace symmetryAxisSearch {
 
 		bool operator==(const AngleAndDistances & rhs) {
 			if (abs(this->angle - rhs.angle) >= ANGLE_TH || this->distances.size() != rhs.distances.size()) {
-//cout << "COMPARED " << this->angle << " " << rhs.angle << " " << this->distances.size() << " " << rhs.distances.size() << endl;
 				return false;
 			}
 			for (int i = 0; i < this->distances.size(); i++) {
@@ -79,7 +78,6 @@ namespace symmetryAxisSearch {
 		for (int i = 0; i != points.size(); i++) {
 			double angle, distance;
 			tie(angle, distance) = points[i];
-//cout << angle << " isang " << std::real(points[i]) << " " << std::imag(points[i]) << endl;
 			if (ans.size() > 0) {
 				double prevAngle = points[i-1].first;
 				double angleDiff = angle - prevAngle;
@@ -89,7 +87,6 @@ namespace symmetryAxisSearch {
 				}
 				ans.push_back(AngleAndDistances(angleDiff));
 			}
-			//ans.push_back(AngleAndDistances(angle, distance));
 			ans.push_back(AngleAndDistances(0, distance));
 		}
 		double firstLastDiff = points.front().first + (2*PI - points.back().first);
@@ -126,30 +123,18 @@ namespace symmetryAxisSearch {
 		    //if match then increment LPS Length by ONE
 		    //If even position, we just increment LPS by ONE without 
 		    //any character comparison
-		    /*while ( ((i + L[i]) < N && (i - L[i]) > 0) && 
-		        ( ((i + L[i] + 1) % 2 == 0) || 
-		        (points[(i + L[i] + 1)/2] == points[(i - L[i] - 1)/2] )))*/
-//cout << (i + L[i] < N) << " " << (i - L[i] > 0) << " " << (points[(i + L[i] + 1)/2] == points[(i - L[i] - 1)/2]) << " " << (i + L[i] + 1)/2 << " " << (i - L[i] - 1)/2 << endl;
-			while (i + L[i] < N && i - L[i] > 0 && points[(i + L[i] + 1)] == points[(i - L[i] - 1)])
-			{
+			while (i + L[i] < N && i - L[i] > 0 && points[(i + L[i] + 1)] == points[(i - L[i] - 1)]) {
 		        L[i]++;
 			}
-//cout << L[i] << " - ";
 
 		    //If palindrome centered at currentRightPosition i 
 		    //expand beyond centerRightPosition R,
 		    //adjust centerPosition C based on expanded palindrome.
-		    if (i + L[i] > R) 
-		    {
+		    if (i + L[i] > R) {
 		        C = i;
 		        R = i + L[i];
 		    }
-		    //Uncomment it to print LPS Length array
-		    //printf("%d ", L[i]);
 		}
-		//start = (maxLPSCenterPosition - maxLPSLength)/2;
-		//end = start + maxLPSLength - 1;
-
 		return L;
 	}
 
@@ -178,24 +163,26 @@ namespace symmetryAxisSearch {
 		vector<pair<double, double>> ans;
 		int start = palindromeLengths.size()/4;
 		int end = palindromeLengths.size()/2;
+
+		for (int i = 0; i < start; i++) angleAcc += ad[i].angle;
 		for (int i = start; i < end; i++) {
+//cout << ad[i].angle << " zzz " << ad[i].distances.size() << endl;
+//if (ad[i].distances.size()) cout << ad[i].distances[0] << endl;
 			if (palindromeLengths[i] >= pfloor) {
 				double angle = angleAcc + ad[i].angle/2;
-//cout << "angle " << angle << " " << cos(angle) << " " << sin(angle) << endl;
+//cout << angleAcc << " " << ad[i].angle << " " << angle << " QQQ " << palindromeLengths[i] << " " << startAngle << endl;
 				ans.push_back({cos(angle), sin(angle)});
 			}
 			angleAcc += ad[i].angle;
-//cout << angleAcc << " fff " << startAngle + PI << endl;
-			//if (angleAcc + ANGLE_TH >= startAngle + PI) {
-			//	break;
-			//}
 		}
 		return ans;
 	}
 
-	// Assumes the set of points is centered.
-	//std::vector<double_point> getSymmetryAxesHighnam(std::vector<double_point> points) {
-	template <class T> void getSymmetryAxesHighnam(std::vector<pair<T, T>> points) {
+	// Returns the symmetry axes of a vector of 2D points.
+	// The return value is a vector of points where the first point is the centroid of the given
+	// set of points, and the other points are directions of the symmetry axes from that centroid
+	// (as all symmetry axes pass through the centroid of the group, it can be used for each).
+	template <class T> vector<pair<double, double>> getSymmetryAxesHighnam(std::vector<pair<T, T>> points) {
 		auto center = getCenterPoint(points);
 		auto centeredPoints = centerPoints(points, center);
 		std::vector<std::pair<double, double>> polarPoints = getPolarPoints(centeredPoints);
@@ -203,16 +190,17 @@ namespace symmetryAxisSearch {
 		double startAngle = polarPoints.front().first;
 
 		std::vector<AngleAndDistances> anglesAndDistances = transformList(polarPoints); // TODO check that contains at least 2
-//std::cout << anglesAndDistances.size() << endl;
-//for (auto a : anglesAndDistances) cout << a.angle << " "; cout << endl;
+		if (anglesAndDistances.size() < 2) {
+			return vector<pair<double, double>> {center};
+		}
+
 		// append vector to itself for calculating the palindrome lengths
 		auto old_count = anglesAndDistances.size();
 		anglesAndDistances.resize(2 * old_count);
 		std::copy_n(anglesAndDistances.begin(), old_count, anglesAndDistances.begin() + old_count);
 
 		std::vector<int> palindromeLengths = getPalindromeLengths(anglesAndDistances);
-
-//for (auto a : palindromeLengths) std::cout << a << " "; std::cout << endl;
+//for (auto i : palindromeLengths) cout << i << " "; cout << endl;
 		auto axes = getSymmetryAxes(anglesAndDistances, palindromeLengths, startAngle);
 
 		for (auto & axis : axes) {
@@ -220,8 +208,9 @@ namespace symmetryAxisSearch {
 			axis.second += center.second;
 		}
 
-		for (auto & axis : axes) { cout << center.first << "-" << center.second << " " << 	axis.first << "-" << axis.second << endl; }
-		//return (std::vector<double_point>)NULL;
+		axes.insert(axes.begin(), center);
+
+		return axes;
 	};
 
 }
@@ -234,7 +223,9 @@ int main() {
 	vector<pair<double, double>> pts {{0,0}, {1,1}, {0,1}, {1,0}};
 	//vector<pair<double, double>> pts {{0,0}, {1,1}, {0,1}, {2,0}};
 	//vector<pair<double, double>> pts {{0,0}, {2,1}, {0,1}, {2,0}};
-	symmetryAxisSearch::getSymmetryAxesHighnam(pts);
+	//vector<pair<double, double>> pts {{0,0}, {0,1}, {1,0}};
+	auto v = symmetryAxisSearch::getSymmetryAxesHighnam(pts);
+	for (auto p : v) cout << p.first << "x" << p.second << " "; cout << endl;
 
 	return 0;
 };
